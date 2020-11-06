@@ -254,6 +254,7 @@ type ModelInfo struct {
 	DBMeta          DbTableMeta
 	Instance        interface{}
 	CodeFields      []*FieldInfo
+	IsFilterField   func(field string) bool
 }
 
 // Notes notes on table generation
@@ -673,7 +674,7 @@ func FindInSlice(slice []string, val string) (int, bool) {
 }
 
 // LoadTableInfo load table info from db connection, and list of tables
-func LoadTableInfo(db *sql.DB, dbTables []string, excludeDbTables []string, conf *Config) map[string]*ModelInfo {
+func LoadTableInfo(db *sql.DB, dbTables []string, excludeDbTables []string, conf *Config, filterFields []string) map[string]*ModelInfo {
 
 	tableInfos := make(map[string]*ModelInfo)
 
@@ -703,7 +704,7 @@ func LoadTableInfo(db *sql.DB, dbTables []string, excludeDbTables []string, conf
 			continue
 		}
 
-		modelInfo, err := GenerateModelInfo(tableInfos, dbMeta, tableName, conf)
+		modelInfo, err := GenerateModelInfo(tableInfos, dbMeta, tableName, conf, filterFields)
 		if err != nil {
 			msg := fmt.Sprintf("Error - %v\n", err)
 			if au != nil {
@@ -735,7 +736,8 @@ func LoadTableInfo(db *sql.DB, dbTables []string, excludeDbTables []string, conf
 // GenerateModelInfo generates a struct for the given table.
 func GenerateModelInfo(tables map[string]*ModelInfo, dbMeta DbTableMeta,
 	tableName string,
-	conf *Config) (*ModelInfo, error) {
+	conf *Config,
+	filterFields []string) (*ModelInfo, error) {
 
 	structName := Replace(conf.ModelNamingTemplate, tableName)
 	structName = CheckForDupeTable(tables, structName)
@@ -796,6 +798,20 @@ func GenerateModelInfo(tables map[string]*ModelInfo, dbMeta DbTableMeta,
 		CodeFields:      fields,
 		DBMeta:          dbMeta,
 		Instance:        instance,
+		IsFilterField: func(field string) bool {
+			field = strings.ToLower(field)
+			field = field[:20]
+			fieldVars := strings.Fields(field)
+			field = strings.TrimSpace(field)
+			names := filterFields
+			for _, name := range names {
+				name = strings.TrimSpace(name)
+				if strings.TrimSpace(fieldVars[len(fieldVars)-1]) == name {
+					return true
+				}
+			}
+			return false
+		},
 	}
 
 	return modelInfo, nil

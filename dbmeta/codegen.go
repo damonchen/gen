@@ -468,6 +468,20 @@ func (c *Config) GenerateTableFile(tableName, templateFilename, outputDirectory,
 	if len(tableInfo.Fields) == 0 {
 		buf.WriteString(fmt.Sprintf("able: %s - No Fields Available\n", tableName))
 		return buf.String()
+	} else {
+		// filter fields
+		fields := []string{}
+		for _, field := range tableInfo.Fields {
+			f := field
+			f = strings.ToLower(f)
+			if f == "id" || f == "createdat" || f == "updatedat" || f == "deletedat" {
+				continue
+			}
+			fields = append(fields, field)
+
+		}
+
+		tableInfo.Fields = fields
 	}
 
 	data := c.CreateContextForTableFile(tableInfo)

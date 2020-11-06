@@ -61,6 +61,7 @@ var (
 	xmlNameFormat    = goopt.String([]string{"--xml-fmt"}, "snake", "xml name format [snake | camel | lower_camel | none]")
 
 	addGormAnnotation     = goopt.Flag([]string{"--gorm"}, []string{}, "Add gorm annotations (tags)", "")
+	filterFields          = goopt.String([]string{"--filter-fields"}, "", "Add filterFields, use comma to separate ")
 	addProtobufAnnotation = goopt.Flag([]string{"--protobuf"}, []string{}, "Add protobuf annotations (tags)", "")
 	protoNameFormat       = goopt.String([]string{"--proto-fmt"}, "snake", "proto name format [snake | camel | lower_camel | none]")
 	gogoProtoImport       = goopt.String([]string{"--gogo-proto"}, "", "location of gogo import ")
@@ -232,6 +233,11 @@ func main() {
 		*modelNamingTemplate = strings.TrimPrefix(*modelNamingTemplate, "'")
 	}
 
+	var realFilterFields []string
+	if *filterFields != "" {
+		realFilterFields = strings.Split(*filterFields, ",")
+	}
+
 	var excludeDbTables []string
 
 	if *excludeSQLTables != "" {
@@ -266,7 +272,7 @@ func main() {
 		}
 	}
 
-	tableInfos = dbmeta.LoadTableInfo(db, dbTables, excludeDbTables, conf)
+	tableInfos = dbmeta.LoadTableInfo(db, dbTables, excludeDbTables, conf, realFilterFields)
 
 	if len(tableInfos) == 0 {
 		fmt.Print(au.Red(fmt.Sprintf("No tables loaded\n")))
